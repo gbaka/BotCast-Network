@@ -1,4 +1,6 @@
+from errors.custom_errors import CommandArgumentError
 import re
+from fuzzywuzzy import fuzz, process
 
 """
 Этот файл содержит вспомогательные функции, используемые в 
@@ -19,35 +21,6 @@ def extract_wait_time(error_message: str) -> int:
         return wait_time_seconds
 
 
-# def extract_arguments(command_part: str, pattern: str) -> tuple:
-#     """
-#     Функция для извелчения аргументов из строки по
-#     переданному паттерну (raw-строка формата reg-ex)
-#     """
-#     match = re.match(pattern, command_part)
-#     if match:
-#         return match.groups()
-#     raise ValueError("Строка не удовлетворяет регулярному выражению")
-
-# def can_convert_to_types(input_list, type_patterns):
-#     """
-#     Функция проверяет, возможно ли привести переданные
-#     аргументы к определенных типам. Если при проверке
-#     в type_patterns встречается тип str, значит все последующие
-#     аргументы валидны.
-#     """
-#     if len(input_list) < len(type_patterns):
-#         return False
-#     for i in range(len(input_list)):
-#         current_type = type_patterns[i]
-#         if current_type == str:
-#             return True
-#         try:
-#             current_type(input_list[i])
-#         except (TypeError, ValueError):
-#             return False
-#     return True
-
 def can_convert_to_types(input_list, type_patterns):
     """
     Функция проверяет, возможно ли привести переданные 
@@ -56,16 +29,20 @@ def can_convert_to_types(input_list, type_patterns):
     аргументы валидны.
     """
     if len(input_list) != len(type_patterns) and Ellipsis not in type_patterns:
-        return False
-    for i in range(len(input_list)):
+        raise CommandArgumentError(
+            "Неправильные типы или количество аргументов"
+        )
+    for i in range(len(type_patterns)):
         current_type = type_patterns[i]
         if current_type == Ellipsis:
-            return True
+            return
         try:
             current_type(input_list[i])
-        except (TypeError, ValueError):
-            return False
-    return True
+        except (TypeError, ValueError, IndexError):
+            raise CommandArgumentError(
+                "Неправильные типы или количество аргументов"
+            )
+    return
 
 
 def remove_newline_from_strings(string_list):
@@ -78,10 +55,6 @@ def remove_newline_from_strings(string_list):
     return cleaned_list
 
 
-# def remove_first_word(string):
-#     cleaned_string = " ".join(string.split(" ")[1:])
-#     return cleaned_string
-
 def remove_first_word(text):
     pattern = r'^\s*\S+'
     match = re.search(pattern, text)
@@ -90,3 +63,26 @@ def remove_first_word(text):
         return result_text
     else:
         return text
+    
+
+def truncate_string(input_string, n):
+    if len(input_string) <= n:
+        return input_string
+    else:
+        return input_string[:n] + "..."
+    
+
+def is_valid_command(string):
+    if len(string) > 0:
+        return string[0] == "/"
+    return False
+
+
+def find_closest_command(existing_commands : list, user_input : str):
+    closest_match = process.extractOne(user_input, existing_commands, scorer=fuzz.ratio)
+
+    if closest_match[1] >= 45: # порог сходства 
+        return closest_match[0]
+    else:
+        return None 
+

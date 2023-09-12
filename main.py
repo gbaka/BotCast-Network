@@ -1,5 +1,5 @@
-from handlers.event_handlers import app
+from handlers.event_handlers import APP
 
 if __name__ == "__main__":
     print("Bot started")
-    app.run()
+    APP.run()
