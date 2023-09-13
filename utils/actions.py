@@ -41,8 +41,7 @@ async def join_group_chat(client: Client, user_id: int, command_part: str) -> No
                                   "❌ **Срок действия ссылки истек или бот был заблокирован в данном чате.**"
                                   )
 
-    except (errors.exceptions.bad_request_400.UsernameInvalid, 
-            errors.exceptions.bad_request_400.UsernameNotOccupied):
+    except (errors.exceptions.bad_request_400.BadRequest):  # ...BadRequest - родительская ошибка для всех, обрабатываемых выше
         await client.send_message(user_id,
                                   "❌ **Ссылка недействительна.**"
                                   )
@@ -68,12 +67,17 @@ async def schedule_message(client: Client, user_id: int, command_part: str) -> N
 async def get_history(client: Client, user_id: int, command_part: str):
     # TODO: доделать
     records = list(map(str, DATABASE_MANAGER.get_all_records()))
-    res = ""
-    for record, i in zip(records, range(5)):   
-        res += str(record) + "\n\n"
-        if i + 1 == 5:
-            break
-
+    if len(records) == 0:
+        res = "История команд пуста."
+    else:
+        res = ""
+        for record in records:
+            res += str(record) + "\n\n"
+    # for record, i in zip(records, range(5)):   
+    #     res += str(record) + "\n\n"
+    #     if i + 1 == 5:
+    #         break
+   
     await client.send_message(user_id, res)
 
 
