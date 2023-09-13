@@ -24,7 +24,8 @@ class DatabaseManager:
         )
         session.add(new_record)   # AIUI: session.add определяет, в какую таблицу нужно добавить запись,
                                   # на основе класса объекта, переданного в качестве аргумента
-        session.commit()          
+        session.commit()  
+        self._trim_history(session)  # удаялем старые записи из истории команд
         session.close()
 
     def get_record(self, record_id):
@@ -48,14 +49,15 @@ class DatabaseManager:
         return records
 
 
-    def _trim_history(self):
-        session = self.Session()
+    def _trim_history(self, session):
+        # session = self.Session()
         record_count = session.query(Record).count()
         if record_count > config.HISTORY_CAPACITY:
             records_to_delete = record_count - config.HISTORY_CAPACITY
-            session.query(Record).order_by(Record.custom_id).limit(records_to_delete).delete()
+            record_ids_to_delete = session.query(Record.record_id).order_by(Record.record_id).limit(records_to_delete)
+            session.query(Record).filter(Record.record_id.in_(record_ids_to_delete)).delete()
         session.commit()
-        session.close()
+        # session.close()
 
 
     def delete_record(self, record_id):
