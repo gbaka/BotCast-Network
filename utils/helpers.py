@@ -21,28 +21,46 @@ def extract_wait_time(error_message: str) -> int:
         return wait_time_seconds
 
 
-def can_convert_to_types(input_list, type_patterns):
+def validate_arguments_against_patterns(args_list, type_patterns):
     """
     Функция проверяет, возможно ли привести переданные 
-    аргументы к определенных типам. Если при проверке
-    в type_patterns встречается тип эллипсис (...), значит все последующие
-    аргументы валидны.
+    аргументы к определенных типам, указываемых в паттерне.
+     
+    На вход функция получает сразу список паттернов и возвращет тот, который
+    удовлетовряет аргументам - в противном случае возбуждается исключение.
+    
+    Если при проверке в type_patterns встречается тип эллипсис (...), 
+    значит все последующиеаргументы валидны.
+
+    Формат паттерна: это кортеж из типов int, str или Ellipsis. Так же 
+    там моожет содержаться строка, представляющая некоторый флаг. Например "-all".
     """
-    if len(input_list) != len(type_patterns) and Ellipsis not in type_patterns:
-        raise CommandArgumentError(
-            "Неправильные типы или количество аргументов"
-        )
-    for i in range(len(type_patterns)):
-        current_type = type_patterns[i]
-        if current_type == Ellipsis:
-            return
-        try:
-            current_type(input_list[i])
-        except (TypeError, ValueError, IndexError):
-            raise CommandArgumentError(
-                "Неправильные типы или количество аргументов"
-            )
-    return
+    for pattern in type_patterns:
+        continue_outer_loop = False
+        if len(args_list) != len(pattern) and Ellipsis not in pattern:
+            continue
+        for i in range(len(pattern)):
+            if isinstance(pattern[i], str):
+                flag = pattern[i]
+                if flag != args_list[i].lower():   # веденный пользователем флаг нечуствителен к регистру
+                    continue_outer_loop = True
+                    break
+            else:
+                _type = pattern[i]
+                if _type == Ellipsis:
+                    return pattern
+                try:
+                    _type(args_list[i])
+                except (TypeError, ValueError, IndexError):  # если конвертация невозможна или аргументов меньше, чем требуется в соответствии
+                    continue_outer_loop = True               # с паттерном аргументов - переходим к сверке со следующим паттерном 
+                    break
+        if not continue_outer_loop:
+            return pattern
+    raise CommandArgumentError(
+        "Неправильные типы или количество аргументов"
+    )
+    
+
 
 
 def remove_newline_from_strings(string_list):
