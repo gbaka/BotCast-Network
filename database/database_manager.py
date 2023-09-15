@@ -1,8 +1,10 @@
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
 from database.models import Record, Chat, Base
+from errors.custom_errors import CommandArgumentError
 import config
 import datetime
+
 
 
 class DatabaseManager:
@@ -28,19 +30,31 @@ class DatabaseManager:
         self._trim_history(session)  # удаялем старые записи из истории команд
         session.close()
 
-    def get_record(self, record_id):
-        session = self.Session()
-        record = session.query(Record).filter_by(id=record_id).first()
-        session.close()
-        return record
+    # def get_record(self, record_id):
+    #     session = self.Session()
+    #     record = session.query(Record).filter_by(id=record_id).first()
+    #     session.close()
+    #     return record
 
-    def update_record(self, record_id, new_command):
+    # def update_record(self, record_id, new_command):
+    #     session = self.Session()
+    #     record = session.query(Record).filter_by(id=record_id).first()
+    #     if record:
+    #         record.command = new_command
+    #         session.commit()
+    #     session.close()
+
+    def get_history_page(self, page):
+        if page < 1:
+            raise CommandArgumentError("Номер страницы не может быть меньше единицы.")
         session = self.Session()
-        record = session.query(Record).filter_by(id=record_id).first()
-        if record:
-            record.command = new_command
-            session.commit()
+        records = session.query(Record
+            ).order_by(desc(Record.record_id)
+            ).offset((page-1)*config.HISTORY_PAGE_CAPACITY
+            ).limit(config.HISTORY_PAGE_CAPACITY)
         session.close()
+        return records
+
 
     def get_all_records(self):
         session = self.Session()
