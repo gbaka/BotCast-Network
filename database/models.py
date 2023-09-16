@@ -27,9 +27,9 @@ class Record(Base):
     def __str__(self):
         return (f"__Команда:__  `{self.command}`\n" +
                 f"__Аргументы:__  `{helpers.truncate_string(self.command_arguments, 16)}`\n" +
+                f"__Дата:__  {self.date}\n" +
                 f"__Имя пользователя:__  {helpers.truncate_string(self.user_name, 12)}\n" +
                 f"__ID пользователя:__  {self.user_id}\n" +
-                f"__Дата:__  {self.date}\n" + 
                 f"__Статус:__  {self.status}")
     
 
@@ -40,3 +40,14 @@ class Chat(Base):
     id = Column(Integer, primary_key=True)
     chat_name = Column(String)
     description = Column(String)
+
+
+class Text(Base):
+    __tablename__ = 'texts'
+
+    text_id = Column(Integer, primary_key=True, autoincrement=True)
+    text = Column(String)
+
+    def __str__(self):
+        return self.text
+    
