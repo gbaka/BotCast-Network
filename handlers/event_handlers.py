@@ -1,6 +1,6 @@
 from pyrogram import Client, filters, types, enums
 from utils import actions, helpers
-from errors.custom_errors import CommandArgumentError, CommandExecutionError
+from errors.custom_errors import CommandArgumentError, CommandExecutionError, BaseCommandError
 from database.database_manager import DATABASE_MANAGER
 import config
 
@@ -33,18 +33,20 @@ async def message_handler(client: Client, message: types.Message):
     user_id = message.from_user.id
     user_name = message.from_user.first_name
 
-    commands = {
+    commands = {    # очень крутая фраза - таблица диспетчеризации
         "/join": actions.join_group_chat,
         "/about": actions.show_summary,
         "/delay": actions.schedule_message,
-        "/history": actions.get_history
+        "/history": actions.execute_history_command,
+        "/texts": actions.execute_texts_command,
+        "/chats": actions.execute_chats_command,
     }
 
     try:
         if helpers.is_valid_command(command):
             if command in commands:
                 await commands[command](client, user_id, command_part)
-                DATABASE_MANAGER.create_history_record(user_id,user_name, command, command_part, "Выполнено")
+                DATABASE_MANAGER.history.create_record(user_id,user_name, command, command_part, "Выполнено")
             else:
                 closest_command = helpers.find_closest_command(list(commands.keys()),command)
                 if closest_command:
@@ -60,16 +62,19 @@ async def message_handler(client: Client, message: types.Message):
                                                    f"Вы можете вспользоваться командой `/commands` " +
                                                    f"для поиска нужной команды."
                                               )
-    except CommandArgumentError:
-        DATABASE_MANAGER.create_history_record(user_id,user_name, command, command_part, 
-                                               "Ошибка: неверные аргументы"
+    except BaseCommandError as e:
+        DATABASE_MANAGER.history.create_record(user_id,user_name, command, command_part, 
+                                               e.get_status()
                                                )
         await client.send_message(chat_id=user_id,
-                                  text="⚠️ **Проверьте правильность преданных аргументов.**\n\n" +
-                                  "Возможно, вы передали неправильное количество аргументов " +
-                                  "или аргументы, которые вы передали, имеют неправильный тип."
+                                  text= str(e)
                                   )
-    except CommandExecutionError:
-        DATABASE_MANAGER.create_history_record(user_id,user_name, command, command_part,
-                                                "Ошибка: неверный запрос"
-                                               )
+
+
+    # except CommandExecutionError as e:
+    #     DATABASE_MANAGER.history.create_record(user_id,user_name, command, command_part,
+    #                                             "Ошибка: неверный запрос"
+    #                                            )
+    #     await client.send_message(chat_id=user_id,
+    #                               text= str(e)
+    #                               )
