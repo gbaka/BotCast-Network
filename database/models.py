@@ -27,12 +27,12 @@ class Record(Base):
     status = Column(String)
 
     def __str__(self):
-        return (f"__Команда:__  `{self.command}`\n" +
-                f"__Аргументы:__  `{helpers.truncate_string(self.command_arguments, 16)}`\n" +
-                f"__Дата:__  {self.date.strftime('%d.%m.%Y %H:%M:%S')}\n" +
-                f"__Имя пользователя:__  {helpers.truncate_string(self.user_name, 12)}\n" +
-                f"__ID пользователя:__  {self.user_id}\n" +
-                f"__Статус:__  {self.status}")
+        return (f"__**Команда:**__  `{self.command}`\n" +
+                f"__**Аргументы:**__  `{helpers.truncate_string(self.command_arguments, 16)}`\n" +
+                f"__**Дата:**__  {self.date.strftime('%d.%m.%Y %H:%M:%S')}\n" +
+                f"__**Имя пользователя:**__  {helpers.truncate_string(self.user_name, 12)}\n" +
+                f"__**ID пользователя:**__  {self.user_id}\n" +
+                f"__**Статус:**__  {self.status}")
     
 
 
@@ -43,8 +43,8 @@ class Text(Base):
     text = Column(String)
 
     def __str__(self):
-        return (f"__ID текста:__  {self.text_id}\n" + 
-                f"__Текст:__\n\"{self.text}")
+        return (f"__**ID текста:**__  {self.text_id}\n" + 
+                f"__**Текст:**__\n\"{self.text}")
     
 
 class Chat(Base):
@@ -59,9 +59,21 @@ class Chat(Base):
         return (self.name, self.chat_id, self.participant_count, self.date_added)
 
     def __str__(self):
-        return (f"__Название:__  {self.name}\n" +
-                f"__ID чата:__  `{self.chat_id}`\n" +
-                f"__Кол-во участников:__  {self.participant_count}\n" +
-                f"__Дата добавления:__  {self.date_added.strftime('%d.%m.%Y %H:%M:%S')}")
+        return (f"__**Название:**__  {self.name}\n" +
+                f"__**ID чата:**__  `{self.chat_id}`\n" +
+                f"__**Кол-во участников:**__  {self.participant_count}\n" +
+                f"__**Дата добавления:**__  {self.date_added.strftime('%d.%m.%Y %H:%M:%S')}")
+    
+
+class DelayedMessage(Base):
+    __tablename__ = "messages"
+
+    message_id = Column(Integer, primary_key=True)
+    # used_text_id  # пока обойдусь без внешних ключей и ссылок на тексты
+    target_chat_id= Column(Integer, primary_key=True)
+    schedule_date = Column(DateTime)
+    # target_chat_name = Column(String) # по-хорошему нужно для chat_titles отдельную таблицу создавать, однако не вижу смысла слишком усложнять
+    #                                   # архитектуру взаимодейтсвия таблиц БД
+
 
     
