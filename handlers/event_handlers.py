@@ -1,6 +1,7 @@
 from pyrogram import Client, filters, types, enums
+
 from utils import actions, helpers
-from errors.custom_errors import CommandArgumentError, CommandExecutionError, BaseCommandError
+from errors.custom_errors import BaseCommandError
 from database.database_manager import DATABASE_MANAGER
 import config
 
@@ -9,8 +10,6 @@ import config
 Этот файл содержит обработчики различных событий.
 """
 
-
-# TODO: добавить маппинг команд через словарь
 
 APP = Client("session", api_id=config.API_ID,
              api_hash=config.API_HASH, parse_mode=enums.ParseMode.MARKDOWN)
@@ -22,9 +21,9 @@ async def message_handler(client: Client, message: types.Message):
 
     print("-----------------------")
     print(f"Получено сообщение: {message.text}")
-    print(f"От кого: id{message.from_user.id} / {message.from_user.first_name} " +
-          "/ @{message.from_user.username}")
+    print(f"От кого: id{message.from_user.id} | {message.from_user.first_name} | @{message.from_user.username}")
     print(f"Время: {message.date}")
+    print(f"ID сообщения: {message.id}")
 
     message_text = message.text
     split_message = message_text.split()
@@ -33,13 +32,14 @@ async def message_handler(client: Client, message: types.Message):
     user_id = message.from_user.id
     user_name = message.from_user.first_name
 
-    commands = {    # очень крутая фраза - таблица диспетчеризации
-        "/join": actions.join_group_chat,
-        "/about": actions.show_summary,
-        "/delay": actions.schedule_message,
+    commands = {    
+        "/about": actions.about,  
         "/history": actions.execute_history_command,
         "/texts": actions.execute_texts_command,
         "/chats": actions.execute_chats_command,
+        "/messages": actions.execute_messages_command,
+        "/notes" : actions.execute_notes_command,
+        "/help" : actions.execute_help_command
     }
 
     try:
@@ -67,14 +67,5 @@ async def message_handler(client: Client, message: types.Message):
                                                e.get_status()
                                                )
         await client.send_message(chat_id=user_id,
-                                  text= str(e)
+                                  text=str(e)
                                   )
-
-
-    # except CommandExecutionError as e:
-    #     DATABASE_MANAGER.history.create_record(user_id,user_name, command, command_part,
-    #                                             "Ошибка: неверный запрос"
-    #                                            )
-    #     await client.send_message(chat_id=user_id,
-    #                               text= str(e)
-    #                               )
