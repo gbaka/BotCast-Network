@@ -2,10 +2,12 @@ COMMAND_INFO = {
 
     # general #
 
-    "general"   :  ("Все команды бота делятся на 5 секций: `history`, `messages`, `chats`, `texts`, `notes`:\n\n"
+    "general"  :   ("Все команды бота делятся на 5 секций: `history`, `messages`, `chats`, `texts`, `notes`:\n\n"
                     
                     "Узнать о командах определенной секции вы можете использовав следующий синтаксис:\n"
-                    "`/help [section : str]`"),
+                    "`/help [section : str]`\n\n"
+                    "О боте:\n"
+                    "`/about`"),
 
     # sections #
 
@@ -60,7 +62,7 @@ COMMAND_INFO = {
                     "`/messages [chat_id : int]`\n- выводит информацию о текущих отложенных сообщениях для чата с ID равным chat_id.\n\n"
                     "`/messages schedule [chat_id : int | -all] [text_id : int | -random] [messages_amount : int] [delay : int (min) = 1] [init_delay : int (min) = 1]`\n- планирует отложенные сообщения.\n\n"
                     "`/messages undo [chat_id : int]`\n- отменяет отложенные сообщения для указанного чата.\n\n"
-                    "`/messages undo -all`\n- отменяет отложенные сообщения для всех чатов (в след. обнов.).\n\n"
+                    "`/messages undo -all`\n- отменяет отложенные сообщения для всех чатов.\n\n"
                     "`/messages autopost [chat_id : int | -all] [text_id : int | -random] [delay : int (min) = 1]`\n- запуск автопостера.\n\n"
                     "`/messages autopost status`\n- выводит текущую статистику по отправленным автопостером сообщениям.\n\n"
                     "`/messages autopost stop`\n- остановка автопостера.")   
