@@ -267,13 +267,31 @@ class DatabaseManager:
                                         ).order_by(func.count().desc()).all()
             return records
         
-        def get_message_ids_by_chat_id(self, chat_id : int) -> list[tuple]:
+        def get_message_ids_by_chat_id(self, chat_id : int) -> list[int]:
             with self.Session() as session:
                 self._refresh(session)
                 records = session.query(DelayedMessage.message_id).filter_by(target_chat_id=chat_id).all()
             message_ids = [message_id for record_tuple in records for message_id in record_tuple]
             return message_ids
+        
+        def get_all_message_ids(self) -> list[int]:
+            with self.Session() as session: 
+                self._refresh(session)
+                records = session.query(DelayedMessage.message_id).all()
+            message_ids = [message_id for record_tuple in records for message_id in record_tuple]
+            return message_ids
             
+        def get_all_message_ids_by_chat_id(self) -> dict[list]:
+            with self.Session() as session: 
+                self._refresh(session)
+                records = session.query(DelayedMessage.target_chat_id ,DelayedMessage.message_id).all()
+            message_ids_by_chat_id = {}
+            for chat_id, message_id in records:
+                if chat_id not in message_ids_by_chat_id:
+                    message_ids_by_chat_id[chat_id] = []
+                message_ids_by_chat_id[chat_id].append(message_id)
+            return message_ids_by_chat_id
+
         def delete_messages_by_chat_id(self) -> None:
             pass
 
