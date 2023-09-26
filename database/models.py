@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from utils import helpers
 import datetime
+import config
 
 """
 Тут объявляются классы, соответствующие таблицам из БД.
@@ -22,7 +23,6 @@ class Record(Base):
     user_name = Column(Integer)
     command = Column(String)
     command_arguments = Column(String)
-    # date = Column(String)
     date = Column(DateTime)
     status = Column(String)
 
@@ -34,7 +34,6 @@ class Record(Base):
                 f"__**ID пользователя:**__  {self.user_id}\n" +
                 f"__**Статус:**__  {self.status}")
     
-
 
 class Text(Base):
     __tablename__ = 'texts'
@@ -69,11 +68,18 @@ class DelayedMessage(Base):
     __tablename__ = "messages"
 
     message_id = Column(Integer, primary_key=True)
-    # used_text_id  # пока обойдусь без внешних ключей и ссылок на тексты
     target_chat_id= Column(Integer, primary_key=True)
     schedule_date = Column(DateTime)
-    # target_chat_name = Column(String) # по-хорошему нужно для chat_titles отдельную таблицу создавать, однако не вижу смысла слишком усложнять
-    #                                   # архитектуру взаимодейтсвия таблиц БД
 
 
+class Note(Base):
+    __tablename__ = "notes"
+
+    note_id = Column(Integer, primary_key=True, autoincrement=True)
+    note = Column(String)
+    description = Column(String, default=config.DEFAULT_NOTE_DESCRIPTION)
     
+    def __str__(self): 
+        return (f"__**ID заметки:**__  {self.note_id}\n" +
+                f"__**Описание:\n**__{self.description}\n" +
+                f"__**Заметка:\n**__`{self.note}`")
