@@ -3,6 +3,9 @@ from pyrogram import errors, client, types
 import re
 from pyrogram.enums import ChatType, ChatMemberStatus
 from database.database_manager import DATABASE_MANAGER
+from  pyrogram.raw.functions.messages import DeleteScheduledMessages
+from  pyrogram.raw.types import InputPeerChat
+
 
 async def is_bot_in_chat(client: client.Client, chat_id : int):
     bot_info = await client.get_me()
@@ -12,16 +15,16 @@ async def is_bot_in_chat(client: client.Client, chat_id : int):
             return True
         return False
     except (errors.exceptions.bad_request_400.BadRequest,
-             errors.exceptions.not_acceptable_406.ChannelPrivate):
+             errors.exceptions.not_acceptable_406.ChannelPrivate,
+             KeyError, ValueError):
         return False
-
+    
 
 async def get_chat_details(client: client.Client, chat_link: str):
-    #подредачить, у возбуждаемой ошибки должен быть правильный должен быть правильный заголовок и содеражние.
     try:  
         chat_obj = await client.get_chat(chat_link)
         chat_type = chat_obj.type
-        if chat_obj.type not in ["supergroup", ChatType.SUPERGROUP]:
+        if chat_obj.type not in ["supergroup","group", ChatType.SUPERGROUP, ChatType.GROUP]:
             raise CommandExecutionError("Должна быть указан ссылка на групповой чат.")
         
         if isinstance(chat_obj, types.ChatPreview):
@@ -31,8 +34,7 @@ async def get_chat_details(client: client.Client, chat_link: str):
                 return {"chat_link" : chat_link, "is_participant" : True, "id" : chat_obj.id, "members_count" : chat_obj.members_count, "title" : chat_obj.title}
             else:
                 return {"chat_link" : chat_link, "is_participant" : False, "id" : chat_obj.id, "members_count" : chat_obj.members_count, "title" : chat_obj.title}
-
-    
+  
     except errors.exceptions.bad_request_400.InviteHashExpired:
         raise  CommandExecutionError("Срок действия ссылки истек.")
     
@@ -68,8 +70,7 @@ async def get_chat_details(client: client.Client, chat_link: str):
                             "is_participant" : False, 
                             "id" : chat_obj.id, 
                             "members_count" : chat_obj.members_count, 
-                            "title" : chat_obj.title}
-            
+                            "title" : chat_obj.title}           
             
             except  (errors.exceptions.bad_request_400.BadRequest):     # значит ссылка на публичный чат некорректна.
                 raise  CommandExecutionError("Ссылка недействительна.")
@@ -93,4 +94,16 @@ async def chats_refresh(client: client.Client):
     DATABASE_MANAGER.chats.delete_by_ids(chat_ids_to_delete)
     return chats_to_delete
 
-    
+
+async def delete_scheduled_messages(client: client.Client, chat_id, message_ids_to_delete) -> list[int]:
+    input_peer = await client.resolve_peer(peer_id=chat_id)
+    deleted_message_ids = []
+
+    for message_id in message_ids_to_delete:
+        try:
+            TLObject = DeleteScheduledMessages(peer=input_peer, id=[message_id])
+            await client.invoke(TLObject)
+            deleted_message_ids.append(message_id)
+        except Exception: 
+            break
+    return deleted_message_ids
