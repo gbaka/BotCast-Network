@@ -2,7 +2,7 @@ COMMAND_INFO = {
 
     # general #
 
-    "general"  :   ("Все команды бота делятся на 5 секций: `history`, `messages`, `chats`, `texts`, `notes`:\n\n"
+    "general"  :   ("Все команды бота делятся на 5 секций: `history`, `messages`, `chats`, `texts`, `notes`.\n\n"
                     
                     "Узнать о командах определенной секции вы можете использовав следующий синтаксис:\n"
                     "`/help [section : str]`\n\n"
