@@ -3,8 +3,17 @@ from pyrogram import errors, client, types
 import re
 from pyrogram.enums import ChatType, ChatMemberStatus
 from database.database_manager import DATABASE_MANAGER
-from  pyrogram.raw.functions.messages import DeleteScheduledMessages
-from  pyrogram.raw.types import InputPeerChat
+
+from pyrogram.raw.functions.messages import DeleteScheduledMessages
+from pyrogram.raw.functions.account import UpdateNotifySettings
+# from  pyrogram.raw.types import InputPeerChat
+from pyrogram.raw.types import InputPeerNotifySettings
+from pyrogram.raw.types import InputNotifyPeer
+
+import datetime
+# class pyrogram.raw.types.InputPeerNotifySettings
+
+
 
 
 async def is_bot_in_chat(client: client.Client, chat_id : int):
@@ -95,7 +104,7 @@ async def chats_refresh(client: client.Client):
     return chats_to_delete
 
 
-async def delete_scheduled_messages(client: client.Client, chat_id, message_ids_to_delete) -> list[int]:
+async def delete_scheduled_messages(client: client.Client, chat_id : int, message_ids_to_delete : list[int]) -> list[int]:
     input_peer = await client.resolve_peer(peer_id=chat_id)
     deleted_message_ids = []
 
@@ -107,3 +116,15 @@ async def delete_scheduled_messages(client: client.Client, chat_id, message_ids_
         except Exception: 
             break
     return deleted_message_ids
+
+
+async def mute_chat(client : client.Client, chat_id : int):
+    input_peer = await client.resolve_peer(peer_id=chat_id)
+    input_notify_peer = InputNotifyPeer(peer=input_peer)
+    now_unix_time = int(datetime.datetime.now().timestamp())
+    seconds_in_year = 86400 * 365
+    settings = InputPeerNotifySettings(silent=True, show_previews=False, mute_until=now_unix_time + seconds_in_year)
+    TLObject = UpdateNotifySettings(peer=input_notify_peer, settings=settings)
+    await client.invoke(TLObject)
+
+
