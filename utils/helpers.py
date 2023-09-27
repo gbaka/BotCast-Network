@@ -1,11 +1,10 @@
-from errors.custom_errors import CommandArgumentError, CommandExecutionError
-from pyrogram import errors, client, types
+
+from errors.custom_errors import CommandArgumentError
 import re
 from fuzzywuzzy import fuzz, process
 import config
 import datetime
-from pyrogram.enums import ChatType, ChatMemberStatus
-from database import models
+
 """
 Этот файл содержит вспомогательные функции, используемые в разных
 частях проекта.
@@ -253,7 +252,7 @@ def extract_username_from_link(chat_link: str):
 
 
 # TODO: доделать
-def create_deleted_chats_report(deleted_chats: list[models.Chat]):   
+def create_deleted_chats_report(deleted_chats):   
     report = ""
     for chat in deleted_chats:
         report += f"__**Название:**__  {chat.name}\n"
@@ -306,7 +305,7 @@ def render_messages_info(chat_messages_tuples: list[tuple]) -> str:
     return title + info + total + remark
 
 
-def create_autoposting_start_report(chat_objs : list[models.Chat], texts : list[models.Text], delay : datetime.timedelta) -> str:
+def create_autoposting_start_report(chat_objs, texts, delay : datetime.timedelta) -> str:
     title = "✅ **Автопостинг успешно запущен:**\n\n"
     if len(texts)>1:
         general = "__**Для постинга будут использоваться случайные тексты из базы.**__\n\n"        
