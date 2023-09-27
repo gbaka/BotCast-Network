@@ -139,6 +139,14 @@ async def execute_chats_command(client: Client, user_id: int,  command_part: str
             chat_details = await telegram_helpers.get_chat_details(client,chat_link)
             if not chat_details['is_participant']:
                 chat_obj = await client.join_chat(chat_details["chat_link"])
+
+                # TODO: start test block
+                try:
+                    await telegram_helpers.mute_chat(client, chat_obj.id)
+                except:
+                    pass
+                # end test block
+
                 print("from join_chat: \n", chat_obj)
                 print("from process_chat: \n", chat_details)
                 DATABASE_MANAGER.chats.add(chat_details["title"], chat_obj.id, chat_details["members_count"] ) 
