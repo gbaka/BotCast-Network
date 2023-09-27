@@ -21,3 +21,5 @@ INITIAL_SEND_DELAY = 1                # задержка перед отправ
 AUTOPOST_MESSAGE_TIME_DIFFERENCE = 1  # разница во времени между сообщениями при автопостинге
 
 DEFAULT_NOTE_DESCRIPTION = "Описания еще нет."  # опсаиние заметки по умолчанию
+
+ADMINS = ["itbakus", 123456789]  # список из username'ов или id админов
