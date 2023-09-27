@@ -500,7 +500,11 @@ async def execute_help_command(client: Client, user_id: int, command_part: str) 
 
 async def about(client: Client, user_id: int, command_part: str) -> None:
     arguments_list = command_part.split()
-    helpers.can_convert_to_types(arguments_list, ())
+    empty_pattern = ()
+    patterns = [
+        empty_pattern
+    ]
+    helpers.validate_arguments_against_patterns(arguments_list, patterns)
 
     bot_info = (
         "BakaposterTG v.1.0"
