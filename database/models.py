@@ -1,8 +1,8 @@
 # models.py
+from utils import helpers
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from utils import helpers
-import datetime
+
 import config
 
 """
