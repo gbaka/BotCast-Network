@@ -25,12 +25,18 @@ async def message_handler(client: Client, message: types.Message):
     print(f"Время: {message.date}")
     print(f"ID сообщения: {message.id}")
 
+    user_id = message.from_user.id
+    user_name = message.from_user.username
+
+    if not (user_id in config.ADMINS or user_name in config.ADMINS):
+        return
+
     message_text = message.text
     split_message = message_text.split()
     command = split_message[0].lower()
     command_part = helpers.remove_first_word(message_text)
     user_id = message.from_user.id
-    user_name = message.from_user.first_name
+    user_first_name = message.from_user.first_name
 
     commands = {    
         "/about": actions.about,  
@@ -46,7 +52,7 @@ async def message_handler(client: Client, message: types.Message):
         if helpers.is_valid_command(command):
             if command in commands:
                 await commands[command](client, user_id, command_part)
-                DATABASE_MANAGER.history.create_record(user_id,user_name, command, command_part, "Выполнено")
+                DATABASE_MANAGER.history.create_record(user_id, user_first_name, command, command_part, "Выполнено")
             else:
                 closest_command = helpers.find_closest_command(list(commands.keys()),command)
                 if closest_command:
@@ -63,7 +69,7 @@ async def message_handler(client: Client, message: types.Message):
                                                    f"для поиска нужной команды."
                                               )
     except BaseCommandError as e:
-        DATABASE_MANAGER.history.create_record(user_id,user_name, command, command_part, 
+        DATABASE_MANAGER.history.create_record(user_id, user_first_name, command, command_part, 
                                                e.get_status()
                                                )
         await client.send_message(chat_id=user_id,
