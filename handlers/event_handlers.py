@@ -87,4 +87,10 @@ async def message_handler(client: Client, message: types.Message):
                                   f"⚙️ **Слишком много запросов к Telegram API.**\n\nЧтобы выполнить данную команду, подождите пожалуста " +
                                   f"{helpers.extract_wait_time(error_message)} секунд."
                                   )
+    except Exception as e:
+        error_message = str(e)
+        await client.send_message(target_chat_id,
+                                  f"⚙️ **Произошла неизвестная ошибка:**\n\n"
+                                  f"{error_message}"
+                                  )
 
