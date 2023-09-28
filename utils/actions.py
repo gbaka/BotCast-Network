@@ -293,7 +293,7 @@ async def execute_messages_command(client: Client, user_id: int, command_part: s
                     print(f"сообщение:\n", sent_message)
                     sent_messages_per_chat.append(sent_message)
                     schedule_date += timedelta(minutes=time_difference)
-            except errors.exceptions.bad_request_400.BadRequest:
+            except Exception:
                 all_messages_sent = False
             finally:
                 sent_messages += sent_messages_per_chat
