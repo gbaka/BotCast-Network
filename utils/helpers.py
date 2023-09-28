@@ -175,7 +175,7 @@ def create_texts_page(page : int, texts : list[str]) -> str:
         )
         for text in texts:
 
-            _text = text if len(text)<60 else text[:60] + "..."
+            _text = text if len(text) < config.PREVIEW_TEXT_LENGTH else text[:config.PREVIEW_TEXT_LENGTH] + "..."
             _text = _text + "\""
             texts_page += _text + "\n\n"
         texts_page += remark
@@ -317,10 +317,12 @@ def create_autoposting_start_report(chat_objs, texts, delay : datetime.timedelta
     for indx, chat_obj in enumerate(chat_objs, start=1):
         chat_id = chat_obj.chat_id
         chat_title = chat_obj.name
+        if indx > config.AUTOPOST_START_REPORT_CAPACITY:
+            info += f"А также еще {len(chat_objs) - indx + 1} чатов.\n\n"
+            break
         info += (f"__**Название чата:**__  {chat_title}\n" +
                  f"__**ID чата:**__  `{chat_id}`\n\n")
-        if indx > config.AUTOPOST_START_REPORT_CAPACITY:
-            info += f"А также еще {len(chat_obj) - indx} чатов.\n\n"
+        
     return title + general + info[:-2]
 
 
@@ -339,13 +341,15 @@ def create_autoposting_status_report(status : dict):
     for indx, chat_id in enumerate(status['chats_info'], start = 1):
         chat_title = status['chats_info'][chat_id]['chat_title']
         message_amount = status['chats_info'][chat_id]['post_amount']
+
+        if indx > config.AUTOPOST_STATUS_REPORT_CAPACITY:
+            info += f"А также еще {status['chat_amount'] - indx + 1} чатов.\n\n"
+            break
+
         info += (f"__**Название чата:**__  {chat_title}\n" + 
                  f"__**ID чата:**__  `{chat_id}`\n" + 
                  f"__**Отправелно сообщений:**__  {message_amount} шт.\n\n") 
     
-        if indx > config.AUTOPOST_STATUS_REPORT_CAPACITY:
-            info += f"А также еще {status['chat_amount'] - indx} чатов.\n\n"
-
     return title + general + info[:-2]
 
 
@@ -364,13 +368,15 @@ def create_autoposting_end_report(status : dict):
     for indx, chat_id in enumerate(status['chats_info'], start = 1):
         chat_title = status['chats_info'][chat_id]['chat_title']
         message_amount = status['chats_info'][chat_id]['post_amount']
+
+        if indx > config.AUTOPOST_END_REPORT_CAPACITY:
+            info += f"А также еще {status['chat_amount'] - indx + 1} чатов.\n\n"
+            break
+
         info += (f"__**Название чата:**__  {chat_title}\n" + 
                  f"__**ID чата:**__  `{chat_id}`\n" + 
                  f"__**Отправелно сообщений:**__  {message_amount} шт.\n\n") 
     
-        if indx > config.AUTOPOST_END_REPORT_CAPACITY:
-            info += f"А также еще {status['chat_amount'] - indx} чатов.\n\n"
-
     return title + general + info[:-2]
 
 
