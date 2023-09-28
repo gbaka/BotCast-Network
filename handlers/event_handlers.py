@@ -1,9 +1,10 @@
-from pyrogram import Client, filters, types, enums
+from pyrogram import Client, filters, types, enums, errors
 
 from utils import actions, helpers
 from errors.custom_errors import BaseCommandError
 from database.database_manager import DATABASE_MANAGER
 import config
+
 
 
 """
@@ -19,17 +20,17 @@ APP.set_parse_mode(enums.ParseMode.MARKDOWN)
 @APP.on_message(filters.text)
 async def message_handler(client: Client, message: types.Message):
 
-    print("-----------------------")
-    print(f"Получено сообщение: {message.text}")
-    print(f"От кого: id{message.from_user.id} | {message.from_user.first_name} | @{message.from_user.username}")
-    print(f"Время: {message.date}")
-    print(f"ID сообщения: {message.id}")
-
     user_id = message.from_user.id
     user_name = message.from_user.username
 
     if not (user_id in config.ADMINS or user_name in config.ADMINS):
         return
+    
+    print("-----------------------")
+    print(f"Получено сообщение: {message.text}")
+    print(f"От кого: id{message.from_user.id} | {message.from_user.first_name} | @{message.from_user.username}")
+    print(f"Время: {message.date}")
+    print(f"ID сообщения: {message.id}")
 
     message_text = message.text
     split_message = message_text.split()
@@ -75,3 +76,10 @@ async def message_handler(client: Client, message: types.Message):
         await client.send_message(chat_id=user_id,
                                   text=str(e)
                                   )
+    except errors.exceptions.flood_420.FloodWait as e:
+        error_message = str(e)
+        await client.send_message(user_id,
+                                  f"⚙️ **Слишком много запросов к Telegram API.**\n\nЧтобы выполнить данную команду, подождите пожалуста " +
+                                  f"{helpers.extract_wait_time(error_message)} секунд."
+                                  )
+
