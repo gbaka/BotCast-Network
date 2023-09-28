@@ -1,4 +1,4 @@
-from errors.custom_errors import CommandArgumentError, CommandExecutionError
+from errors.custom_errors import CommandExecutionError
 from pyrogram import errors, client, types
 import re
 from pyrogram.enums import ChatType, ChatMemberStatus
@@ -11,9 +11,6 @@ from pyrogram.raw.types import InputPeerNotifySettings
 from pyrogram.raw.types import InputNotifyPeer
 
 import datetime
-# class pyrogram.raw.types.InputPeerNotifySettings
-
-
 
 
 async def is_bot_in_chat(client: client.Client, chat_id : int):
@@ -91,15 +88,33 @@ async def get_chat_details(client: client.Client, chat_link: str):
             raise  CommandExecutionError("Ссылка некорректна или имя чата набрано неправильно.")
         
 
-async def chats_refresh(client: client.Client):
+# OLD VER:
+# async def chats_refresh(client: client.Client):
+#     """ Возвраащет список удаленных после refresh чатов (объектов модели Chat). """
+#     chats = DATABASE_MANAGER.chats.get_chats()
+#     chats_to_delete = []
+#     for chat in chats:
+#         if not await is_bot_in_chat(client, chat.chat_id):
+#             chats_to_delete.append(chat)
+#     chat_ids_to_delete = [chat.chat_id for chat in chats_to_delete]
+#     DATABASE_MANAGER.chats.delete_by_ids(chat_ids_to_delete)
+#     return chats_to_delete
+
+# NEW VER:
+async def chats_refresh(client: client.Client) -> list[int]:
     """ Возвраащет список удаленных после refresh чатов (объектов модели Chat). """
-    # TODO: возможно потом придется переписать, не очень эффективно проверять каждый чат.
-    chats = DATABASE_MANAGER.chats.get_chats()
-    chats_to_delete = []
-    for chat in chats:
-        if not await is_bot_in_chat(client, chat.chat_id):
-            chats_to_delete.append(chat)
-    chat_ids_to_delete = [chat.chat_id for chat in chats_to_delete]
+
+    db_chats = DATABASE_MANAGER.chats.get_chats() # chats in db format
+    chat_ids = []  # current chat ids
+    async for dialog in client.get_dialogs():
+        if dialog.chat.type in [ChatType.SUPERGROUP, ChatType.GROUP, "supergroup","group"]:
+            # если в возвращаемом объекте chat нет информации о количестве пользователь - бота там забанили
+            if not dialog.chat.members_count: 
+                continue
+        chat_ids.append(dialog.chat.id)
+        
+    chats_to_delete = [db_chat for db_chat in db_chats if db_chat.chat_id not in chat_ids] # chats in db format
+    chat_ids_to_delete = [db_chat.chat_id for db_chat in chats_to_delete]
     DATABASE_MANAGER.chats.delete_by_ids(chat_ids_to_delete)
     return chats_to_delete
 
