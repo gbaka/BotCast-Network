@@ -81,11 +81,14 @@ class DatabaseManager:
         def __init__(self, Session: sessionmaker) -> None:
             self.Session = Session
 
-        def add(self, text: str) -> None:
+        def add(self, text: str) -> int:
             with self.Session() as session:
-                new_record = Text(text=text)
-                session.add(new_record)   # AIUI: session.add сам определяет, в какую таблицу нужно добавить запись,                            
+                new_record = Text(text=text)       
+                session.add(new_record)   # AIUI: session.add сам определяет, в какую таблицу нужно добавить запись, исходя из маппинга объекта (поля __table__ в классе объекта)  
+                                          # session.add() и session.commit() работают примерно по аналогии с git add и git commit - add заносит в индекс, а commit фиксирует изменения.
                 session.commit()  
+                text_id = new_record.text_id   # к text_id следует обращаться только после коммита, до этого там хранится None - 
+            return text_id
 
         def get_text(self, text_id : int) -> Text:
             with self.Session() as session:
@@ -145,10 +148,10 @@ class DatabaseManager:
 
 
     class _Chats:
-        def __init__(self, Session:sessionmaker) -> None:
+        def __init__(self, Session:sessionmaker) -> int:
             self.Session = Session
 
-        def add(self, name: str, chat_id: int, participant_count: int) -> None:
+        def add(self, name: str, chat_id: int, participant_count: int) -> int:
             with self.Session() as session:
                 chat = Chat(
                     name=name, 
@@ -158,6 +161,8 @@ class DatabaseManager:
                 )
                 session.add(chat)                              
                 session.commit()  
+                chat_id = chat.chat_id
+            return chat_id
 
         def get_name(self, chat_id: int) -> str:
             with self.Session() as session:
@@ -310,11 +315,13 @@ class DatabaseManager:
         def __init__(self, Session : sessionmaker) -> None:
             self.Session = Session
             
-        def add(self, note : str) -> None:
+        def add(self, note : str) -> int:
             with self.Session() as session:
                 note = Note(note=note)
                 session.add(note)
                 session.commit()
+                note_id = note.note_id
+            return note_id
 
         def get_page(self, page: int) -> list[Note]:
             if page < 1:
@@ -326,7 +333,7 @@ class DatabaseManager:
                     ).limit(config.NOTES_PAGE_CAPACITY)
             return records
         
-        def get_notes_count(self) -> None:
+        def get_notes_count(self) -> int:
             with self.Session() as session:
                 records_number  = session.query(Note).count()
             return records_number
