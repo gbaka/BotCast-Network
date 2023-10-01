@@ -113,6 +113,7 @@ async def execute_chats_command(client: Client, peer_id: int,  command_part: str
     
     add_pattern = ("add", [str, "-this"])
     join_pattern = ("join", [str, "-this"])
+    leave_pattern = ("leave", [str, "-this"])
     del_pattern = ("del", [int, "-this"])
     get_info_pattern = ("info", [str, "-this"])
     clear_pattern = ("clear",)
@@ -121,6 +122,7 @@ async def execute_chats_command(client: Client, peer_id: int,  command_part: str
     patterns = [
         add_pattern,
         join_pattern,
+        leave_pattern,
         del_pattern,
         get_info_pattern,
         clear_pattern,
@@ -156,7 +158,7 @@ async def execute_chats_command(client: Client, peer_id: int,  command_part: str
                   f"ID добавленного чата:  `{chat_id}`")
         else:
             if DATABASE_MANAGER.chats.has_chat(chat_details["id"]): 
-                res = "⚙️ **Бот уже добавлен в базу.**"
+                res = "⚙️ **Чат уже добавлен в базу.**"
             else: 
                 chat_id = DATABASE_MANAGER.chats.add(chat_details["title"],  chat_details["id"], chat_details["members_count"])
                 res = ("✅ **Бот добавил чат в базу.**\n\n"
@@ -182,6 +184,17 @@ async def execute_chats_command(client: Client, peer_id: int,  command_part: str
                   f"ID чата:  `{chat_id}`")
         else:
             res = "⚙️ **Бот уже находится в данном чате.**"
+
+    elif used_pattern == leave_pattern:
+        chat_link = peer_id if arguments_list[1] == "-this" else arguments_list[1]
+        chat_details = await telegram_helpers.get_chat_details(client, chat_link)
+        if chat_details['is_participant']:
+            chat_id = chat_details['id']
+            await client.leave_chat(chat_id, True)
+            res = ("🗑️ **Бот успешно покинул чат.\n\n**" +
+                  f"ID покинутого чата:  `{chat_id}`")
+        else:
+            res = "⚙️ **Бота нет в указанном чате.**"
          
 
     elif used_pattern == clear_pattern:
@@ -519,11 +532,21 @@ async def execute_users_command(client: Client, peer_id: int, command_part: str)
 
     used_pattern = helpers.validate_arguments_against_patterns(arguments_list, patterns)      
 
-    if used_pattern in move_users_patterns:
+    if used_pattern in move_users_patterns:   
+        # if not DATABASE_MANAGER.chats.has_chat(source_chat_id):
+        #     raise CommandExecutionError("Вы можете добавить его в базу следующей командой:\n`/chats add`",
+        #                                 "⚠️ **Чат-источник не обнаржуен в базе.**")
         source_chat_id = peer_id if arguments_list[1]=="-this" else int(arguments_list[1])  
-        if not DATABASE_MANAGER.chats.has_chat(source_chat_id):
-            raise CommandExecutionError("Вы можете добавить его в базу следующей командой:\n`/chats add`",
-                                        "⚠️ **Чат-источник не обнаржуен в базе.**")
+        try: 
+            source_chat_details = await telegram_helpers.get_chat_details(client, source_chat_id)   
+        except: 
+            raise CommandExecutionError("Помните, что бот должен состоять в чате-источнике. "
+                                        "Вы можете добавить его чат-источник следующей командой:\n`/chats join`",
+                                        "⚠️ **Указанный ID чата некорректен.**")
+        if not source_chat_details['is_participant']:
+            raise CommandExecutionError("Бота нет в указаном чате. "
+                                        "Вы можете добавить бота в данный чат, не добавляя чат в базу, следующей командой:\n `/chats join`",
+                                        "⚠️ **Бот должен состоять в чате-источнике.**")
         
         target_chat_id = peer_id if arguments_list[2]=="-this" else int(arguments_list[2]) 
         try:
