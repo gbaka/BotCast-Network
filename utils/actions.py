@@ -191,12 +191,13 @@ async def execute_chats_command(client: Client, peer_id: int,  command_part: str
         if chat_details['is_participant']:
             chat_id = chat_details['id']
             await client.leave_chat(chat_id, True)
+            if chat_id == peer_id:
+                return       
             res = ("🗑️ **Бот успешно покинул чат.\n\n**" +
                   f"ID покинутого чата:  `{chat_id}`")
         else:
             res = "⚙️ **Бота нет в указанном чате.**"
          
-
     elif used_pattern == clear_pattern:
         records_count = DATABASE_MANAGER.chats.get_record_count() 
         if records_count > 0:
