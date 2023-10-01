@@ -48,9 +48,9 @@ COMMAND_INFO = {
 
                     "__**Команды:**__\n"
                     "`/chats [page : int = 1]`\n- выводит страницу каталога чатов с номером page.\n\n"
-                    "`/chats add [chat_link : str | chat_id : int]`\n- добавляет чат в базу используя ID чата или ссылку для вступления.\n\n" 
-                    "`/chats del [chat_id : int]`\n- удаляяет из каталога чатов чат с ID равным chat_id.\n\n"
-                    "`/chats info [chat_link : str | chat_id : int]`\n- выводит информацию о чате.\n\n"
+                    "`/chats add [chat_link : str | chat_id : int | -this]`\n- добавляет чат в базу используя ID чата или ссылку для вступления.\n\n" 
+                    "`/chats del [chat_id : int | -this]`\n- удаляяет из каталога чатов чат с ID равным chat_id.\n\n"
+                    "`/chats info [chat_link : str | chat_id : int | -this]`\n- выводит информацию о чате.\n\n"
                     "`/chats clear`\n- очищает каталог чатов."),
 
     "messages" :   ("__**Описание:**__\n"
@@ -59,11 +59,11 @@ COMMAND_INFO = {
 
                     "__**Команды:**__\n"
                     "`/messages`\n- выводит информацию о текущих отложенных сообщениях.\n\n"
-                    "`/messages [chat_id : int]`\n- выводит информацию о текущих отложенных сообщениях для чата с ID равным chat_id.\n\n"
-                    "`/messages schedule [chat_id : int | -all] [text_id : int | -random] [messages_amount : int] [delay : int (min) = 1] [init_delay : int (min) = 1]`\n- планирует отложенные сообщения.\n\n"
-                    "`/messages undo [chat_id : int]`\n- отменяет отложенные сообщения для указанного чата.\n\n"
+                    "`/messages [chat_id : int | -this]`\n- выводит информацию о текущих отложенных сообщениях для чата с ID равным chat_id.\n\n"
+                    "`/messages schedule [chat_id : int | -all | -this] [text_id : int | -random] [messages_amount : int] [delay : int (min) = 1] [init_delay : int (min) = 1]`\n- планирует отложенные сообщения.\n\n"
+                    "`/messages undo [chat_id : int | -this]`\n- отменяет отложенные сообщения для указанного чата.\n\n"
                     "`/messages undo -all`\n- отменяет отложенные сообщения для всех чатов.\n\n"
-                    "`/messages autopost [chat_id : int | -all] [text_id : int | -random] [delay : int (min) = 1]`\n- запуск автопостера.\n\n"
+                    "`/messages autopost [chat_id : int | -all | -this] [text_id : int | -random] [delay : int (min) = 1]`\n- запуск автопостера.\n\n"
                     "`/messages autopost status`\n- выводит текущую статистику по отправленным автопостером сообщениям.\n\n"
                     "`/messages autopost stop`\n- остановка автопостера.")   
 
