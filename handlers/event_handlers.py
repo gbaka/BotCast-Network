@@ -33,7 +33,7 @@ async def message_handler(client: Client, message: types.Message):
         return
         
     print("-----------------------")
-    print(f"Получено сообщение: {message.text}")
+    print(f"Получено сообщение: {message.text.markdown}")
     print(f"От кого: id{message.from_user.id} | {message.from_user.first_name} | @{message.from_user.username}")
     print(f"Время: {message.date}")
     print(f"ID сообщения: {message.id}")
