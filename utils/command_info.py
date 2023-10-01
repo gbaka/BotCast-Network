@@ -52,7 +52,8 @@ COMMAND_INFO = {
                     "__**Команды:**__\n"
                     "`/chats [page : int = 1]`\n- выводит страницу каталога чатов с номером page.\n\n"
                     "`/chats add [chat_link : str | chat_id : int | -this]`\n- добавляет чат в базу используя ID чата или ссылку для вступления.\n\n" 
-                    "`/chats join [chat_link : str | chat_id : int | -this]`\n- заставляет бота вступить в указанный чат, не добавляя его в базу.\n\n" 
+                    "`/chats join [chat_link : str | chat_id : int | -this]`\n- бот вступает в указанный чат, не добавляя его в базу.\n\n" 
+                    "`/chats leave [chat_link : str | chat_id : int | -this]`\n- бот покидает указанный чат.\n\n" 
                     "`/chats del [chat_id : int | -this]`\n- удаляяет из каталога чатов чат с ID равным chat_id.\n\n"
                     "`/chats info [chat_link : str | chat_id : int | -this]`\n- выводит информацию о чате.\n\n"
                     "`/chats clear`\n- очищает каталог чатов."),
