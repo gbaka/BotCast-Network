@@ -1,9 +1,12 @@
 
+from pyrogram import types, errors
 from errors.custom_errors import CommandArgumentError
 import re
 from fuzzywuzzy import fuzz, process
 import config
 import datetime
+from utils import helpers
+from math import ceil
 
 """
 Этот файл содержит вспомогательные функции, используемые в разных
@@ -142,14 +145,18 @@ def find_closest_command(existing_commands : list, user_input : str) -> str | No
         return None 
     
 
-def create_history_page(page : int, records : list[str]) -> str:
+def create_history_page(page : int, records : list[str], records_count) -> str:
     if len(records) == 0:
         if page == 1:
             history_page = "📂 **История команд пуста.**"
         else:
             history_page = f"📔 **{page}-ая страница истории команд пуста.**"
+            history_page += (f"Всего в истории __**{records_count}**__ записей и __**{ceil(records_count/config.HISTORY_PAGE_CAPACITY)}**__ непустых страниц.\n"
+                             f"Максимальный вместимость всей истории команд: __**{config.HISTORY_CAPACITY}**__ записей.\n\n")
     else:
         history_page = f"📔 **{page}-ая страница истории команд:**\n\n"
+        history_page += (f"Всего в истории __**{records_count}**__ записей и __**{ceil(records_count/config.HISTORY_PAGE_CAPACITY)}**__ непустых страниц.\n"
+                             f"Максимальный вместимость всей истории команд: __**{config.HISTORY_CAPACITY}**__ записей.\n\n")
         remark = (
             '__* Вы можете очистить историю команд следующей командой:__\n'
             '`/history clear`'
@@ -160,21 +167,22 @@ def create_history_page(page : int, records : list[str]) -> str:
     return history_page
 
 
-def create_texts_page(page : int, texts : list[str]) -> str:
+def create_texts_page(page : int, texts : list[str], text_count : int) -> str:
     if len(texts) == 0:
         if page == 1:
             texts_page = "📂 **Каталог текстов пуст.**"
         else:
-            texts_page = f"📔 **{page}-ая страница каталога текстов пуста.**"
+            texts_page = f"📔 **{page}-ая страница каталога текстов пуста.**\n\n"
+            texts_page += f"Всего в каталоге __**{text_count}**__ текстов и __**{ceil(text_count/config.TEXTS_PAGE_CAPACITY)}**__ непустых страниц.\n\n"
     else:
         texts_page = f"📔 **{page}-ая страница каталога текстов:**\n\n"
+        texts_page += f"Всего в каталоге __**{text_count}**__ текстов и __**{ceil(text_count/config.TEXTS_PAGE_CAPACITY)}**__ непустых страниц.\n\n"
         remark = (
              "* __Вы можете удалять тексты по ID или сразу очистить весь каталог с помощью команд:__\n"
              "`/texts del`\n"
              "`/texts clear`"
         )
         for text in texts:
-
             _text = text if len(text) < config.PREVIEW_TEXT_LENGTH else text[:config.PREVIEW_TEXT_LENGTH] + "..."
             _text = _text + "\""
             texts_page += _text + "\n\n"
@@ -182,14 +190,16 @@ def create_texts_page(page : int, texts : list[str]) -> str:
     return texts_page
 
 
-def create_chats_page(page : int, chats : list[str]) -> str:
+def create_chats_page(page : int, chats : list[str], chat_count : int) -> str:
     if len(chats) == 0:
         if page == 1:
             chats_page = "📂 **Каталог чатов пуст.**"
         else:
-            chats_page = f"📔 **{page}-ая страница каталога чатов пуста.**"
+            chats_page = f"📔 **{page}-ая страница каталога чатов пуста.**\n\n"
+            chats_page += f"Всего в каталоге __**{chat_count}**__ чатов и __**{ceil(chat_count/config.CHATS_PAGE_CAPACITY)}**__ непустых страниц.\n\n"
     else:
         chats_page = f"📔 **{page}-ая страница каталога чатов:**\n\n"
+        chats_page += f"Всего в каталоге __**{chat_count}**__ чатов и __**{ceil(chat_count/config.CHATS_PAGE_CAPACITY)}**__ непустых страниц.\n\n"
         remark = (
              "* __Вы можете удалять чаты по ID или сразу очистить весь каталог с помощью команд:__\n"
              "`/chats del`\n"
@@ -249,6 +259,14 @@ def extract_username_from_link(chat_link: str):
         return match.group(2)
     else:
         raise CommandArgumentError("Ссылка недействительна.") 
+    
+
+def convert_link_to_username(chat_link: str) -> str:
+    regex_pattern = r"(?:https:\/\/)?(?:t|telegram)\.(?:me|dog)/([\w]+)"
+    match = re.search(regex_pattern, chat_link)
+    if match:
+        return match.group(1)
+    return chat_link
 
 
 # TODO: доделать
@@ -380,14 +398,16 @@ def create_autoposting_end_report(status : dict):
     return title + general + info[:-2]
 
 
-def create_notes_page(page : int, notes : list[str]) -> str:
+def create_notes_page(page : int, notes : list[str], note_count : int) -> str:
     if len(notes) == 0:
         if page == 1:
             notes_page = "📂 **Каталог заметок пуст.**"
         else:
-            notes_page = f"📔 **{page}-ая страница каталога заметок пуста.**"
+            notes_page = f"📔 **{page}-ая страница каталога заметок пуста.**\n\n"
+            notes_page += f"Всего в каталоге __**{note_count}**__ заметок и __**{ceil(note_count/config.NOTES_PAGE_CAPACITY)}**__ непустых страниц.\n\n"
     else:
         notes_page = f"📔 **{page}-ая страница каталога заметок:**\n\n"
+        notes_page += f"Всего в каталоге __**{note_count}**__ заметок и __**{ceil(note_count/config.NOTES_PAGE_CAPACITY)}**__ непустых страниц.\n\n"
         remark = (
              "* __Вы можете удалять заметки по ID или сразу очистить весь каталог с помощью команд:__\n"
              "`/notes del`\n"
@@ -397,4 +417,71 @@ def create_notes_page(page : int, notes : list[str]) -> str:
             notes_page += note + "\n\n"
         notes_page += remark
     return notes_page
-                              
+
+
+def create_moved_users_report(status : dict) -> str: 
+    added_user_count = len(status["added_users"])
+    expected_added_user_count = status["expected_added_user_count"]
+
+    if added_user_count == expected_added_user_count: 
+        title = f"✅ **В целевой чат было добавлено {added_user_count}/{expected_added_user_count} пользователей.**\n\n"
+        title += f"Бот смог перенести запрашиваемое число пользоватей из одного чата в другой.\n\n"
+    else: 
+        title = f"⚠️ **В целевой чат было добавлено {added_user_count}/{expected_added_user_count} пользователей.**\n\n"
+        title += f"Боту не удалось перенести запрашиваемое число пользователей. Возможно, подходящих пользователей не было в чате.\n\n"
+    
+    error_info = "" 
+    error = status["error"]
+    print(error, type(error))
+    if isinstance(error, errors.exceptions.flood_420.FloodWait):
+        error_info += ("В процессе работы возникла критическая ошибка:\n\n"
+                       "⚙️ **Слишком много запросов к Telegram API.**\nЧтобы выполнить данную команду, необходимо подождать "
+                        f"{helpers.extract_wait_time(str(error))} секунд.\n\n")
+        
+    info = ""
+    if added_user_count > 0:
+        info += f"Из чата с ID {status['source_chat_id']} в чат с ID {status['target_chat_id']} были добавлены следующие пользователи:\n" 
+
+        for indx, user in enumerate(status['added_users'], start=1):
+            info += (f"__**Имя:**__  {user.first_name}\n"
+                    f"__**ID:**__  {user.id}\n\n")
+            if indx == config.MOVE_USERS_REPORT_CAPACITY:
+                title += f"А также еще {len(status['added_users'] - indx)} пользователей."
+                break
+            
+    return title + error_info + info
+
+
+def render_user_info(user_obj : types.User): 
+
+    def convert_none(arg):
+        if arg is None: 
+            return "Неизвествно"
+        return arg
+        
+    def convert_bool(arg : bool):
+        if arg:
+            return "Да"
+        elif arg is None:
+            return "Неизвествно"
+        return "Нет"
+    
+    def convert_datetime(arg : [datetime.datetime | None]):
+        if arg:
+            return arg.strftime('%d.%m.%Y %H:%M:%S')
+        return "Неизвествно"
+
+    title = "📝 **Информация об указанном пользователе:**\n\n"
+    
+    info = (f"__**Имя:**__  {convert_none(user_obj.first_name)}\n"
+            f"__**Фамилия:**__  {convert_none(user_obj.last_name)}\n"
+            f"__**Username:**__  {convert_none(user_obj.username)}\n"
+            f"__**ID:**__  {convert_none(user_obj.id)}\n"
+            f"__**Бот:**__  {convert_bool(user_obj.is_bot)}\n"
+            f"__**Премиум аккаунт:**__  {convert_bool(user_obj.is_premium)}\n"
+            f"__**Последний онлайн:**__  {convert_datetime(user_obj.last_online_date)}\n"
+            )
+    
+    return title + info
+
+                            

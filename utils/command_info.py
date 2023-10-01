@@ -1,8 +1,11 @@
+import config
+
+
 COMMAND_INFO = {
 
     # general #
 
-    "general"  :   ("Все команды бота делятся на 5 секций: `history`, `messages`, `chats`, `texts`, `notes`.\n\n"
+    "general"  :   ("Все команды бота делятся на 6 секций: `history`, `messages`, `chats`, `texts`, `notes`, `users`.\n\n"
                     
                     "Узнать о командах определенной секции вы можете использовав следующий синтаксис:\n"
                     "`/help [section : str]`\n\n"
@@ -48,23 +51,31 @@ COMMAND_INFO = {
 
                     "__**Команды:**__\n"
                     "`/chats [page : int = 1]`\n- выводит страницу каталога чатов с номером page.\n\n"
-                    "`/chats add [chat_link : str | chat_id : int]`\n- добавляет чат в базу используя ID чата или ссылку для вступления.\n\n" 
-                    "`/chats del [chat_id : int]`\n- удаляяет из каталога чатов чат с ID равным chat_id.\n\n"
-                    "`/chats info [chat_link : str | chat_id : int]`\n- выводит информацию о чате.\n\n"
+                    "`/chats add [chat_link : str | chat_id : int | -this]`\n- добавляет чат в базу используя ID чата или ссылку для вступления.\n\n" 
+                    "`/chats join [chat_link : str | chat_id : int | -this]`\n- заставляет бота вступить в указанный чат, не добавляя его в базу.\n\n" 
+                    "`/chats del [chat_id : int | -this]`\n- удаляяет из каталога чатов чат с ID равным chat_id.\n\n"
+                    "`/chats info [chat_link : str | chat_id : int | -this]`\n- выводит информацию о чате.\n\n"
                     "`/chats clear`\n- очищает каталог чатов."),
 
     "messages" :   ("__**Описание:**__\n"
-                    "Команды данной секции используются для управления каталогом чатов, чаты из каталога чатов "
-                    "необходимы для осуществления автопостинга и планирования сообщений.\n\n"
+                    "Команды данной секции используются для управления отложенными сообщениями и работой автопостера.\n\n"
 
                     "__**Команды:**__\n"
                     "`/messages`\n- выводит информацию о текущих отложенных сообщениях.\n\n"
-                    "`/messages [chat_id : int]`\n- выводит информацию о текущих отложенных сообщениях для чата с ID равным chat_id.\n\n"
-                    "`/messages schedule [chat_id : int | -all] [text_id : int | -random] [messages_amount : int] [delay : int (min) = 1] [init_delay : int (min) = 1]`\n- планирует отложенные сообщения.\n\n"
-                    "`/messages undo [chat_id : int]`\n- отменяет отложенные сообщения для указанного чата.\n\n"
+                    "`/messages [chat_id : int | -this]`\n- выводит информацию о текущих отложенных сообщениях для чата с ID равным chat_id.\n\n"
+                   f"`/messages schedule [chat_id : int | -all | -this] [text_id : int | -random] [messages_amount : int] [delay : int (min) = {config.DELAYED_MESSAGE_TIME_DIFFERENCE}] [init_delay : int (min) = {config.INITIAL_SEND_DELAY}]`\n- планирует отложенные сообщения.\n\n"
+                    "`/messages undo [chat_id : int | -this]`\n- отменяет отложенные сообщения для указанного чата.\n\n"
                     "`/messages undo -all`\n- отменяет отложенные сообщения для всех чатов.\n\n"
-                    "`/messages autopost [chat_id : int | -all] [text_id : int | -random] [delay : int (min) = 1]`\n- запуск автопостера.\n\n"
+                   f"`/messages autopost [chat_id : int | -all | -this] [text_id : int | -random] [delay : int (min) = {config.AUTOPOST_MESSAGE_TIME_DIFFERENCE}]`\n- запуск автопостера.\n\n"
                     "`/messages autopost status`\n- выводит текущую статистику по отправленным автопостером сообщениям.\n\n"
-                    "`/messages autopost stop`\n- остановка автопостера.")   
+                    "`/messages autopost stop`\n- остановка автопостера."),
+
+    "users"    :   ("__**Описание:**__\n"
+                    "Команды данной секции используются для управления пользователями.\n\n"
+
+                    "__**Команды:**__\n"
+                   f"`/users move [source_chat_id : int | -this] [target_chat_id : int | -this] [user_count : int = {config.DEFAULT_USERS_TO_MOVE}| -max ({config.MAX_USERS_TO_MOVE})]`\n - добавляет user_count "
+                    "пользователей из чата источника в целевой чат.\n\n"
+                    "`/users info [username : str | user_id : int]`\n- выводит информацию о пользователе.")
 
 }

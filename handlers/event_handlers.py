@@ -51,7 +51,8 @@ async def message_handler(client: Client, message: types.Message):
         "/chats": actions.execute_chats_command,
         "/messages": actions.execute_messages_command,
         "/notes" : actions.execute_notes_command,
-        "/help" : actions.execute_help_command
+        "/help" : actions.execute_help_command,
+        "/users" : actions.execute_users_command
     }
 
     try:
@@ -90,6 +91,7 @@ async def message_handler(client: Client, message: types.Message):
         DATABASE_MANAGER.history.create_record(user_id, user_first_name, command, command_part, 
                                                "Слишком много запросов к API."
                                                )
+    # TODO: раскоментить при релизе 
     except Exception as e:
         error_message = str(e)
         await client.send_message(target_chat_id,

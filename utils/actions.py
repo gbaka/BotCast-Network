@@ -17,7 +17,7 @@ import config
 """
 
 
-async def execute_history_command(client: Client, user_id: int, command_part: str) -> None:
+async def execute_history_command(client: Client, peer_id: int, command_part: str) -> None:
     arguments_list = command_part.split()
 
     get_histroy_patterns = [(), (int,), ("-s",), ("-s", int)]
@@ -37,9 +37,10 @@ async def execute_history_command(client: Client, user_id: int, command_part: st
             page = int(arguments_list[0])
         elif used_pattern == ("-s", int):
             page = int(arguments_list[1])
+        record_count = DATABASE_MANAGER.history.get_record_count()
         records = list(map(str, DATABASE_MANAGER.history.get_page(page)))
         records = helpers.trim_history_records(records) if used_pattern in [("-s", int), ("-s",)] else records
-        res = helpers.create_history_page(page, records)
+        res = helpers.create_history_page(page, records, record_count)
 
     elif used_pattern == clear_history_pattern:
         records_count = DATABASE_MANAGER.history.get_record_count() 
@@ -50,10 +51,10 @@ async def execute_history_command(client: Client, user_id: int, command_part: st
         else:
             res = "⚙️ **История команд и так пуста.**" 
 
-    await client.send_message(user_id, res)
+    await client.send_message(peer_id, res)
 
 
-async def execute_texts_command(client: Client, user_id: int, command_part: str) -> None:
+async def execute_texts_command(client: Client, peer_id: int, command_part: str) -> None:
     arguments_list = command_part.split()
 
     get_patterns = [(), (int,)]
@@ -74,8 +75,9 @@ async def execute_texts_command(client: Client, user_id: int, command_part: str)
 
     if used_pattern == add_pattern:
         text = helpers.remove_first_word(command_part)
-        DATABASE_MANAGER.texts.add(text)
-        res = "✅ **Текст успешно добавлен в базу.**"
+        text_id = DATABASE_MANAGER.texts.add(text)
+        res = ("✅ **Текст успешно добавлен в базу.**\n\n"
+              f"ID добавленного текста:  `{text_id}`")
 
     elif used_pattern == del_pattern:
         text_id = int(arguments_list[1])
@@ -83,11 +85,11 @@ async def execute_texts_command(client: Client, user_id: int, command_part: str)
         res = "🗑️ **Текст успешно удален из базы.**"
 
     elif used_pattern == clear_pattern:
-        records_count = DATABASE_MANAGER.texts.get_record_count() 
-        if records_count > 0:
+        record_count = DATABASE_MANAGER.texts.get_record_count() 
+        if record_count > 0:
             DATABASE_MANAGER.texts.clear()
             res = ("🗑️ **Каталог текстов успешно очищен.\n\n**" +
-                   f"Было удалено {records_count} текстов.")
+                   f"Было удалено {record_count} текстов.")
         else:
             res = "⚙️ **Каталог текстов и так пуст.**" 
 
@@ -98,24 +100,27 @@ async def execute_texts_command(client: Client, user_id: int, command_part: str)
         pass
 
     elif used_pattern in get_patterns:
+        record_count = DATABASE_MANAGER.texts.get_record_count() 
         page = 1 if used_pattern==() else int(arguments_list[0])
         texts = list(map(str, DATABASE_MANAGER.texts.get_page(page)))
-        res = helpers.create_texts_page(page, texts)
+        res = helpers.create_texts_page(page, texts, record_count)
 
-    await client.send_message(user_id, res)
+    await client.send_message(peer_id, res)
 
 
-async def execute_chats_command(client: Client, user_id: int,  command_part: str) -> None:
+async def execute_chats_command(client: Client, peer_id: int,  command_part: str) -> None:
     arguments_list = command_part.split()
     
-    add_pattern = ("add", str)
-    del_pattern = ("del", int)
-    get_info_pattern = ("info", str)
+    add_pattern = ("add", [str, "-this"])
+    join_pattern = ("join", [str, "-this"])
+    del_pattern = ("del", [int, "-this"])
+    get_info_pattern = ("info", [str, "-this"])
     clear_pattern = ("clear",)
     get_patterns = [(), (int,)]
 
     patterns = [
         add_pattern,
+        join_pattern,
         del_pattern,
         get_info_pattern,
         clear_pattern,
@@ -131,40 +136,53 @@ async def execute_chats_command(client: Client, user_id: int,  command_part: str
             report = helpers.create_deleted_chats_report(deleted_chats)
             raise CommandExecutionError(report, error_title)
 
-    if used_pattern==add_pattern:
-        # TODO:  перенести обрботку floodwait на верхний уровень 
-        chat_link = arguments_list[1]
-        api_error = True
-        try:
-            chat_details = await telegram_helpers.get_chat_details(client,chat_link)
-            if not chat_details['is_participant']:
-                chat_obj = await client.join_chat(chat_details["chat_link"])
+    if used_pattern == add_pattern:
+        chat_link = peer_id if arguments_list[1] == "-this" else arguments_list[1]
+        chat_details = await telegram_helpers.get_chat_details(client,chat_link)
+        if not chat_details['is_participant']:
+            chat_obj = await client.join_chat(chat_details["chat_link"])
 
-                # TODO: start test block
-                try:
-                    await telegram_helpers.mute_chat(client, chat_obj.id)
-                except:
-                    pass
-                # end test block
+            # TODO: start test block
+            try:
+                await telegram_helpers.mute_chat(client, chat_obj.id)
+            except:
+                pass
+            # end test block
 
-                print("from join_chat: \n", chat_obj)
-                print("from process_chat: \n", chat_details)
-                DATABASE_MANAGER.chats.add(chat_details["title"], chat_obj.id, chat_details["members_count"] ) 
-                res = "✅ **Бот смог войти в чат и добавил его в базу.**" 
-            else:
-                if DATABASE_MANAGER.chats.has_chat(chat_details["id"]): 
-                    res = "⚙️ **Бот уже добавлен в базу.**"
-                else: 
-                    DATABASE_MANAGER.chats.add(chat_details["title"],  chat_details["id"], chat_details["members_count"])
-                    res = "✅ **Бот добавил чат в базу.**"
-            api_error = False
-            
-        except errors.exceptions.flood_420.FloodWait as e:
-            error_title = "⚙️ **Слишком много запросов к Telegram API.**"
-            error_message =("Чтобы выполнить данную команду, подождите пожалуста " +
-                            f"{helpers.extract_wait_time(str(e))} секунд.")
-        if api_error:
-            raise CommandExecutionError(error_message, error_title)
+            print("from join_chat: \n", chat_obj)
+            print("from process_chat: \n", chat_details)
+            chat_id = DATABASE_MANAGER.chats.add(chat_details["title"], chat_obj.id, chat_details["members_count"] ) 
+            res = ("✅ **Бот смог войти в чат и добавил его в базу.**\n\n"
+                  f"ID добавленного чата:  `{chat_id}`")
+        else:
+            if DATABASE_MANAGER.chats.has_chat(chat_details["id"]): 
+                res = "⚙️ **Бот уже добавлен в базу.**"
+            else: 
+                chat_id = DATABASE_MANAGER.chats.add(chat_details["title"],  chat_details["id"], chat_details["members_count"])
+                res = ("✅ **Бот добавил чат в базу.**\n\n"
+                      f"ID добавленного чата:  `{chat_id}`")
+
+    elif used_pattern == join_pattern: 
+        chat_link = peer_id if arguments_list[1] == "-this" else arguments_list[1]
+        chat_details = await telegram_helpers.get_chat_details(client, chat_link)
+        if not chat_details['is_participant']:
+            chat_obj = await client.join_chat(chat_details["chat_link"])
+
+            # TODO: start test block
+            try:
+                await telegram_helpers.mute_chat(client, chat_obj.id)
+            except:
+                pass
+            # end test block
+
+            chat_id = chat_obj.id
+            print("from join_chat: \n", chat_obj)
+            print("from process_chat: \n", chat_details)
+            res = ("✅ **Бот успешно вошел в чат.**\n\n"
+                  f"ID чата:  `{chat_id}`")
+        else:
+            res = "⚙️ **Бот уже находится в данном чате.**"
+         
 
     elif used_pattern == clear_pattern:
         records_count = DATABASE_MANAGER.chats.get_record_count() 
@@ -176,39 +194,41 @@ async def execute_chats_command(client: Client, user_id: int,  command_part: str
             res = "⚙️ **Каталог чатов и так пуст.**" 
 
     elif used_pattern == del_pattern:
-        chat_id = int(arguments_list[1])
+        chat_id = peer_id if arguments_list[1] == "-this" else int(arguments_list[1])
         DATABASE_MANAGER.chats.delete(chat_id)
-        res = "🗑️ **Чат успешно удален из базы.**"
+        res = ("🗑️ **Чат успешно удален из базы.**\n\n"
+                f"ID удаленного чата:  `{chat_id}`")
 
     elif used_pattern == get_info_pattern:
-        chat_link = arguments_list[1]
+        chat_link = peer_id if arguments_list[1] == "-this" else  arguments_list[1]
         chat_details = await telegram_helpers.get_chat_details(client,chat_link)
         res = helpers.render_chat_info(chat_details)
 
     elif used_pattern in get_patterns:
         page = 1 if used_pattern==() else int(arguments_list[0])
         chats = list(map(str, DATABASE_MANAGER.chats.get_page(page)))
-        res = helpers.create_chats_page(page, chats)
+        record_count = DATABASE_MANAGER.chats.get_record_count()
+        res = helpers.create_chats_page(page, chats, record_count)
     
-    await client.send_message(user_id, res) 
+    await client.send_message(peer_id, res) 
 
 
-async def execute_messages_command(client: Client, user_id: int, command_part: str) -> None:
+async def execute_messages_command(client: Client, peer_id: int, command_part: str) -> None:
     arguments_list = command_part.split()
 
     schedule_patterns = [
-        ("schedule", [int, "-all"], [int, "-random"], int, int, int), 
-        ("schedule", [int, "-all"], [int, "-random"], int, int,),
-        ("schedule", [int, "-all"], [int, "-random"], int,)
+        ("schedule", [int, "-all", "-this"], [int, "-random"], int, int, int), 
+        ("schedule", [int, "-all", "-this"], [int, "-random"], int, int,),
+        ("schedule", [int, "-all", "-this"], [int, "-random"], int,)
     ]  
     autopost_patterns = [
-        ("autopost", [int, "-all"], [int, "-random"], int), 
-        ("autopost", [int, "-all"], [int, "-random"])
+        ("autopost", [int, "-all", "-this"], [int, "-random"], int), 
+        ("autopost", [int, "-all", "-this"], [int, "-random"])
     ]
     get_patterns = [
-        (), (int,)
+        (), ([int, "-this"],)
     ]
-    undo_pattern = ("undo", [int, "-all"])
+    undo_pattern = ("undo", [int, "-all", "-this"])
     autopost_status_pattern = ("autopost", "status")
     autopost_stop_pattern = ("autopost", "stop")
 
@@ -237,7 +257,8 @@ async def execute_messages_command(client: Client, user_id: int, command_part: s
                 raise CommandExecutionError("Вы можете добавить чаты в базу используя следующую команду:\n `/chats add`",
                                          "⚠️ **Каталог чатов пуст**")
         else:
-            target_chat_id = int(arguments_list[1])
+            target_chat_id = peer_id if arguments_list[1] == "-this" else int(arguments_list[1])
+            
             if not DATABASE_MANAGER.chats.has_chat(target_chat_id):   
                 raise CommandExecutionError("Чтобы назначать отложенные сообщения в данный чат, добавьте его в базу следующей командой:\n`/chats add`",
                                          "⚠️ **ID указанного чата нет в базе.**")
@@ -317,8 +338,8 @@ async def execute_messages_command(client: Client, user_id: int, command_part: s
             except CommandArgumentError:
                 chat_title = None
             extended_records.append((*record, chat_title))
-        if used_pattern == (int,):
-            chat_id = int(arguments_list[0])
+        if used_pattern == ([int, "-this"],):
+            chat_id = peer_id if arguments_list[0] == "-this" else int(arguments_list[0])
             if chat_id not in [record[0] for record in records]:
                 res = "⚙️ **Для чата с указанным  ID нет отложенных сообещний.**"
             else:
@@ -357,7 +378,7 @@ async def execute_messages_command(client: Client, user_id: int, command_part: s
                         "Боту не удалось отменить отправку некоторых сообщений. Возможно, он был удален из некоторых чатов."
                     )              
         else:
-            chat_id = int(arguments_list[1])
+            chat_id = peer_id if arguments_list[1] == "-this" else int(arguments_list[1])
             delayed_message_ids = DATABASE_MANAGER.messages.get_message_ids_by_chat_id(chat_id)
             delayed_message_amount = len(delayed_message_ids)
             if delayed_message_amount == 0:
@@ -383,7 +404,8 @@ async def execute_messages_command(client: Client, user_id: int, command_part: s
                 raise CommandExecutionError("Вы можете добавить чаты в базу используя следующую команду:\n `/chats add`",
                                          "⚠️ **Каталог чатов пуст**")
         else:
-            target_chat_id = int(arguments_list[1])
+            target_chat_id = peer_id if arguments_list[1] == "-this" else int(arguments_list[1])
+             
             if not DATABASE_MANAGER.chats.has_chat(target_chat_id):   
                 raise CommandExecutionError("Чтобы начать автопостинг в данный чат, добавьте его в базу следующей командой:\n `/chats add`",
                                          "⚠️ **ID указанного чата нет в базе.**")
@@ -423,10 +445,10 @@ async def execute_messages_command(client: Client, user_id: int, command_part: s
             status = AUTOPOSTER.get_status()
             res = helpers.create_autoposting_status_report(status)
 
-    await client.send_message(user_id, res)
+    await client.send_message(peer_id, res)
 
 
-async def execute_notes_command(client: Client, user_id: int,  command_part: str) -> None:
+async def execute_notes_command(client: Client, peer_id: int,  command_part: str) -> None:
     arguments_list = command_part.split()
         
     get_patterns = [(), (int,)]
@@ -447,8 +469,9 @@ async def execute_notes_command(client: Client, user_id: int,  command_part: str
 
     if used_pattern == add_pattern:
         note = helpers.remove_first_word(command_part)
-        DATABASE_MANAGER.notes.add(note)
-        res = "✅ **Заметка успешно добавлена в базу.**"
+        note_id = DATABASE_MANAGER.notes.add(note)
+        res = ("✅ **Заметка успешно добавлена в базу.**\n\n"
+              f"ID добавленной заметки:  `{note_id}`")
 
     elif used_pattern == del_pattern: 
         note_id = int(arguments_list[1])
@@ -458,14 +481,15 @@ async def execute_notes_command(client: Client, user_id: int,  command_part: str
     elif used_pattern in get_patterns:
         page = 1 if used_pattern==() else int(arguments_list[0])
         notes = list(map(str, DATABASE_MANAGER.notes.get_page(page)))
-        res = helpers.create_notes_page(page, notes)
+        note_count = DATABASE_MANAGER.notes.get_notes_count()
+        res = helpers.create_notes_page(page, notes, note_count)
 
     elif used_pattern == clear_pattern:
-        notes_count = DATABASE_MANAGER.notes.get_notes_count()
-        if notes_count > 0:
+        note_count = DATABASE_MANAGER.notes.get_notes_count()
+        if note_count > 0:
             DATABASE_MANAGER.notes.clear()
             res = ("🗑️ **Каталог заметок успешно очищен.\n\n**" +
-                   f"Было удалено {notes_count} заметок.")
+                   f"Было удалено {note_count} заметок.")
         else: 
             res =  "⚙️ **Каталог заметок и так пуст.**" 
 
@@ -475,10 +499,83 @@ async def execute_notes_command(client: Client, user_id: int,  command_part: str
         DATABASE_MANAGER.notes.set_description(note_id, description)
         res = "✅ **Описание заметки успешно изменено.**"
     
-    await client.send_message(user_id, res)
+    await client.send_message(peer_id, res)
 
 
-async def execute_help_command(client: Client, user_id: int, command_part: str) -> None:
+async def execute_users_command(client: Client, peer_id: int, command_part: str) -> None:
+    arguments_list = command_part.split()
+    
+    move_users_patterns = [ 
+        ("move", [int, "-this"], [int, "-this"], [int, "-max"]),   # откуда, куда, сколько
+        ("move", [int, "-this"], [int, "-this"])
+    ]
+
+    get_info_pattern = ("info", str)
+
+    patterns = [
+        *move_users_patterns, 
+        get_info_pattern
+    ]     
+
+    used_pattern = helpers.validate_arguments_against_patterns(arguments_list, patterns)      
+
+    if used_pattern in move_users_patterns:
+        source_chat_id = peer_id if arguments_list[1]=="-this" else int(arguments_list[1])  
+        if not DATABASE_MANAGER.chats.has_chat(source_chat_id):
+            raise CommandExecutionError("Вы можете добавить его в базу следующей командой:\n`/chats add`",
+                                        "⚠️ **Чат-источник не обнаржуен в базе.**")
+        
+        target_chat_id = peer_id if arguments_list[2]=="-this" else int(arguments_list[2]) 
+        try:
+            target_chat_details = await telegram_helpers.get_chat_details(client, target_chat_id)
+        except:
+            raise CommandExecutionError("Помните, что бот должен состоять в целевом чате. "
+                                        "Вы можете добавить его в целевой чат следующей командой:\n`/chats join`",
+                                        "⚠️ **Указанный ID чата некорректен.**")
+        if not target_chat_details['is_participant']:
+            raise CommandExecutionError("Бота нет в указаном чате. "
+                                        "Вы можете добавить бота в данный чат, не добавляя чат в базу, следующей командой:\n `/chats join`",
+                                        "⚠️ **Бот должен состоять в целевом чате.**")
+        
+        if source_chat_id == target_chat_id:
+            raise CommandExecutionError("", "⚠️ **ID чата-источника не должен совпадать с ID целевого чата.**")
+
+        user_move_argument = arguments_list[3] if len(arguments_list) >= 4 else config.DEFAULT_USERS_TO_MOVE
+        if user_move_argument == "-max":
+            status = await telegram_helpers.transfer_users(client, source_chat_id, target_chat_id, config.MAX_USERS_TO_MOVE) 
+        else:
+            user_move_count = int(user_move_argument)
+            if user_move_count > config.MAX_USERS_TO_MOVE:
+                raise CommandExecutionError("", f"⚠️ **Количество переносимых участников не должно превышать {config.MAX_USERS_TO_MOVE}.**")
+            if user_move_count < 1:
+                 raise CommandExecutionError("", f"⚠️ **Количество переносимых участников должно быть целым положтельным числом.**")
+            status = await telegram_helpers.transfer_users(client, source_chat_id, target_chat_id, user_move_count)
+            
+        res = helpers.create_moved_users_report(status)
+       
+    elif used_pattern == get_info_pattern:
+        user_link = arguments_list[1]
+        user_link = helpers.convert_link_to_username(user_link)
+        print(user_link)
+        api_error = True
+        try:
+            user_obj = await client.get_users(user_link)
+            res = helpers.render_user_info(user_obj)
+            api_error = False
+        except errors.exceptions.bad_request_400.UsernameNotOccupied:
+            error_title = "⚠️ **Пользователя с таким username не существует.**"
+        except (errors.exceptions.bad_request_400.UsernameInvalid, IndexError, KeyError):
+            error_title = "⚠️ **Имя пользователя некорректно.**"
+        except errors.exceptions.bad_request_400.PeerIdInvalid:
+            error_title = "⚠️ **ID пользователя некорректен.**"
+        
+        if api_error:
+            raise CommandExecutionError("", error_title)
+
+    await client.send_message(peer_id, str(res))
+
+
+async def execute_help_command(client: Client, peer_id: int, command_part: str) -> None:
     arguments_list = command_part.split()
     
     general_help_pattern = ()
@@ -503,10 +600,10 @@ async def execute_help_command(client: Client, user_id: int, command_part: str) 
             title = f"📝 **Справка по командам секции {section}:**\n\n"
             res = title + COMMAND_INFO[section]
     
-    await client.send_message(user_id, res)
+    await client.send_message(peer_id, res)
 
 
-async def about(client: Client, user_id: int, command_part: str) -> None:
+async def about(client: Client, peer_id: int, command_part: str) -> None:
     arguments_list = command_part.split()
     empty_pattern = ()
     patterns = [
@@ -515,9 +612,14 @@ async def about(client: Client, user_id: int, command_part: str) -> None:
     helpers.validate_arguments_against_patterns(arguments_list, patterns)
 
     bot_info = (
-        "BakaposterTG v.1.0"
+        "**BakaposterTG v.1.3.1**\n\n"
+
+        "__**Разработчик:**__ `@itbakus` aka `Бакус` aka `Самарский Титан` aka `Киборг Ветеран Самары 2014` aka `Ъака` aka "
+        "`Шварц из Самары` aka `Мистер Черноголовка 2020` aka `Cоветник губернатора Тульской области по программированию`.\n\n"
+
+        "__**Дата последнего обнвления:**__ 01.10.2023"
     )
     try:
-        await client.send_message(user_id, bot_info)
+        await client.send_message(peer_id, bot_info)
     except:
         pass

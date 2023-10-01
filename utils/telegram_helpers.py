@@ -1,15 +1,13 @@
 from errors.custom_errors import CommandExecutionError
-from pyrogram import errors, client, types
-import re
-from pyrogram.enums import ChatType, ChatMemberStatus
 from database.database_manager import DATABASE_MANAGER
 
+from pyrogram import errors, client, types
+from pyrogram.enums import ChatType, ChatMemberStatus
 from pyrogram.raw.functions.messages import DeleteScheduledMessages
 from pyrogram.raw.functions.account import UpdateNotifySettings
-# from  pyrogram.raw.types import InputPeerChat
-from pyrogram.raw.types import InputPeerNotifySettings
-from pyrogram.raw.types import InputNotifyPeer
+from pyrogram.raw.types import InputPeerNotifySettings, InputNotifyPeer
 
+import re
 import datetime
 
 
@@ -142,4 +140,43 @@ async def mute_chat(client : client.Client, chat_id : int):
     TLObject = UpdateNotifySettings(peer=input_notify_peer, settings=settings)
     await client.invoke(TLObject)
 
+
+async def transfer_users(client : client.Client, source_chat_id : int, target_chat_id : int, users_amount : int) -> list[types.User]:
+    # print(f"amout is : {users_amount}")
+    
+    target_chat_user_ids = []
+    async for chat_member in client.get_chat_members(chat_id=target_chat_id):
+        user_id = chat_member.user.id
+        target_chat_user_ids.append(user_id)
+
+    added_users = []
+    occured_critical_exception = None
+    async for chat_member in client.get_chat_members(chat_id=source_chat_id):
+   
+        if chat_member.status == ChatMemberStatus.MEMBER and chat_member.user.id not in target_chat_user_ids: 
+            user = chat_member.user
+            user_id = user.id
+            status = False
+            try:
+                status = await client.add_chat_members(target_chat_id, user_id)
+                added_users.append(user)
+
+            # CRITICAL EXCEPTIONS: #
+            except errors.exceptions.flood_420.FloodWait as e:
+                occured_critical_exception = e
+                break
+
+            # NON CRITICAL EXCEPTIONS: #
+            except Exception as e:
+                print(user_id, status, e)
+                continue
+            
+            if 1 <= users_amount <= len(added_users):
+                break
+
+    return {"added_users" : added_users,
+            "source_chat_id" : source_chat_id,
+            "target_chat_id" : target_chat_id,
+            "expected_added_user_count" : users_amount,
+            "error" : occured_critical_exception} 
 
