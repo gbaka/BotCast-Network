@@ -84,10 +84,14 @@ async def message_handler(client: Client, message: types.Message):
                                   )
     except errors.exceptions.flood_420.FloodWait as e:
         error_message = str(e)
-        await client.send_message(target_chat_id,
-                                  f"⚙️ **Слишком много запросов к Telegram API.**\n\nЧтобы выполнить данную команду, подождите пожалуста " +
-                                  f"{helpers.extract_wait_time(error_message)} секунд."
-                                  )
+        # TODO: костыль, но лучше оставить так
+        try:
+            await client.send_message(target_chat_id,
+                                    f"⚙️ **Слишком много запросов к Telegram API.**\n\nЧтобы выполнить данную команду, подождите пожалуста " +
+                                    f"{helpers.extract_wait_time(error_message)} секунд."
+                                    )
+        except:
+            pass
         DATABASE_MANAGER.history.create_record(user_id, user_first_name, command, command_part, 
                                                "Слишком много запросов к API."
                                                )
