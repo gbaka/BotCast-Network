@@ -520,7 +520,7 @@ async def execute_users_command(client: Client, peer_id: int, command_part: str)
     arguments_list = command_part.split()
     
     move_users_patterns = [ 
-        ("move", [int, "-this"], [int, "-this"], [int, "-max"]),   # откуда, куда, сколько
+        ("move", [int, "-this"], [int, "-this"], [int, "-max", "-force"]),   # откуда, куда, сколько
         ("move", [int, "-this"], [int, "-this"])
     ]
 
@@ -567,6 +567,14 @@ async def execute_users_command(client: Client, peer_id: int, command_part: str)
         user_move_argument = arguments_list[3] if len(arguments_list) >= 4 else config.DEFAULT_USERS_TO_MOVE
         if user_move_argument == "-max":
             status = await telegram_helpers.transfer_users(client, source_chat_id, target_chat_id, config.MAX_USERS_TO_MOVE) 
+            res = helpers.create_moved_users_report(status)
+        elif user_move_argument == "-force":
+            status = await telegram_helpers.transfer_all_users(client, source_chat_id, target_chat_id)
+            if status:
+                res = "✅ **Перенос выполнен.**\n\nБыли перенесены все доступные пользователи."
+            else: 
+                res = "⚠️ **Перенос не выполнен.**\n\nПроизошла ошибка."
+
         else:
             user_move_count = int(user_move_argument)
             if user_move_count > config.MAX_USERS_TO_MOVE:
@@ -574,8 +582,9 @@ async def execute_users_command(client: Client, peer_id: int, command_part: str)
             if user_move_count < 1:
                  raise CommandExecutionError("", f"⚠️ **Количество переносимых участников должно быть целым положтельным числом.**")
             status = await telegram_helpers.transfer_users(client, source_chat_id, target_chat_id, user_move_count)
+            res = helpers.create_moved_users_report(status)
             
-        res = helpers.create_moved_users_report(status)
+        
        
     elif used_pattern == get_info_pattern:
         user_link = arguments_list[1]
