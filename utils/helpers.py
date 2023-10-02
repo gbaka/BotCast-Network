@@ -285,7 +285,7 @@ def create_delayed_messages_report(message_sending_info: list[dict], initial_sch
         title = "✅ **Отложенные успешно сообщения созданы:**\n\n"
     else: 
         title = ("⚠️ **Произошла ошибка Telegram API.**\n" + 
-                 "Не все из отложенных сообщений были успешно созданы.**\n\n")
+                 "Не все из отложенных сообщений были успешно созданы.\n\n")
     general = (f"__**Начало цикла отправки:**__\n{initial_schedule_date.strftime('%d.%m.%Y %H:%M:%S')}\n" +
                f"__**Интервал между сообщениями:**__\n{time_difference} мин.\n\n")
     info = "__**Чаты назначения:**__\n"  
