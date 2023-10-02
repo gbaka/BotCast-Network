@@ -146,37 +146,59 @@ async def transfer_users(client : client.Client, source_chat_id : int, target_ch
     
     target_chat_user_ids = []
     async for chat_member in client.get_chat_members(chat_id=target_chat_id):
-        user_id = chat_member.user.id
-        target_chat_user_ids.append(user_id)
+        if chat_member.user:
+            user_id = chat_member.user.id
+            target_chat_user_ids.append(user_id)
 
     added_users = []
     occured_critical_exception = None
     async for chat_member in client.get_chat_members(chat_id=source_chat_id):
-   
-        if chat_member.status == ChatMemberStatus.MEMBER and chat_member.user.id not in target_chat_user_ids: 
-            user = chat_member.user
-            user_id = user.id
-            status = False
-            try:
-                status = await client.add_chat_members(target_chat_id, user_id)
-                added_users.append(user)
+        if chat_member.user:
+            if chat_member.status == ChatMemberStatus.MEMBER and chat_member.user.id not in target_chat_user_ids: 
+                user = chat_member.user
+                user_id = user.id
+                status = False
+                try:
+                    status = await client.add_chat_members(target_chat_id, user_id)
+                    added_users.append(user)
 
-            # CRITICAL EXCEPTIONS: #
-            except errors.exceptions.flood_420.FloodWait as e:
-                occured_critical_exception = e
-                break
+                # CRITICAL EXCEPTIONS: #
+                except errors.exceptions.flood_420.FloodWait as e:
+                    occured_critical_exception = e
+                    break
 
-            # NON CRITICAL EXCEPTIONS: #
-            except Exception as e:
-                print(user_id, status, e)
-                continue
-            
-            if 1 <= users_amount <= len(added_users):
-                break
+                # NON CRITICAL EXCEPTIONS: #
+                except Exception as e:
+                    print(user_id, status, e)
+                    continue
+                
+                if 1 <= users_amount <= len(added_users):
+                    break
 
     return {"added_users" : added_users,
             "source_chat_id" : source_chat_id,
             "target_chat_id" : target_chat_id,
             "expected_added_user_count" : users_amount,
             "error" : occured_critical_exception} 
+
+
+async def transfer_all_users(client: client.Client, source_chat_id: int, target_chat_id: int) -> bool:
+    target_chat_user_ids = []
+    async for chat_member in client.get_chat_members(chat_id=target_chat_id):
+        if chat_member.user:
+            user_id = chat_member.user.id
+            target_chat_user_ids.append(user_id)
+
+    source_chat_user_ids = []
+    async for chat_member in client.get_chat_members(chat_id=source_chat_id):
+        if chat_member.user:
+            if chat_member.status == ChatMemberStatus.MEMBER and chat_member.user.id not in target_chat_user_ids: 
+                source_chat_user_ids.append(chat_member.user.id)
+
+    print(len(source_chat_user_ids))
+
+    status = await client.add_chat_members(target_chat_id, source_chat_user_ids)
+    
+    return status
+
 
