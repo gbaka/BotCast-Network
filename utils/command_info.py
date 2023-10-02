@@ -75,7 +75,7 @@ COMMAND_INFO = {
                     "Команды данной секции используются для управления пользователями.\n\n"
 
                     "__**Команды:**__\n"
-                   f"`/users move [source_chat_id : int | -this] [target_chat_id : int | -this] [user_count : int = {config.DEFAULT_USERS_TO_MOVE}| -max ({config.MAX_USERS_TO_MOVE})]`\n - добавляет user_count "
+                   f"`/users move [source_chat_id : int | -this] [target_chat_id : int | -this] [user_count : int = {config.DEFAULT_USERS_TO_MOVE}| -max ({config.MAX_USERS_TO_MOVE}) | -force]`\n - добавляет user_count "
                     "пользователей из чата источника в целевой чат.\n\n"
                     "`/users info [username : str | user_id : int]`\n- выводит информацию о пользователе.")
 
